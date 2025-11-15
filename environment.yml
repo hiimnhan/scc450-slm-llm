@@ -1,0 +1,13 @@
+name: scc450-slm-llm
+channels:
+  - defaults
+dependencies:
+  - python=3.13
+  - pandas
+  - numpy
+  - scikit-learn
+  - scipy
+  - pip
+
+  - pip:
+      - docling[pdf]
