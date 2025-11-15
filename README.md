@@ -1,30 +1,45 @@
 # Installation
 
-1. Create new environment
+1. Install `uv`. [uv](https://docs.astral.sh/uv/) is a fast Python package and environment manager
 
 ```bash
-python -m venv .venv
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-2. Activate environment
+Verify:
+
+```bash
+uv --version
+```
+
+2. Create and activate environment
+
+- Create a new environment
+
+```bash
+uv venv
+```
+
+- Activate (Linux/macOS)
 
 ```bash
 source .venv/bin/activate
 ```
 
-2. Install required packages
+- Activate (Windows)
 
 ```bash
-pip install -r requirements.txt
+.venv\Scripts\activate
 ```
 
-3. (Optional) install new packages
-
-- Add your package into `requirements.in` file
-- Run [pip-compile](https://pypi.org/project/pip-tools/) command to add that package and its dependencies into `requirements.txt` (see link if you haven't had it installed)
+3. Install project dependencies
 
 ```bash
-pip-compile requirements.in -o requirements.txt
+uv sync
 ```
 
-- Re-run step 2
+To install a package
+
+```bash
+uv add package_name
+```
