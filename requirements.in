@@ -2,3 +2,4 @@ docling
 torch
 numpy
 pandas
+loguru
