@@ -17,3 +17,14 @@ source .venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
+
+3. (Optional) install new packages
+
+- Add your package into `requirements.in` file
+- Run [pip-compile](https://pypi.org/project/pip-tools/) command to add that package and its dependencies into `requirements.txt` (see link if you haven't had it installed)
+
+```bash
+pip-compile requirements.in -o requirements.txt
+```
+
+- Re-run step 2
