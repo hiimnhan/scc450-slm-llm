@@ -1,4 +1,5 @@
-= Environment Setup
+# Environment Setup
+
 This project used _Conda_ for environment management.
 
 1. Create the conda environment
