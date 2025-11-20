@@ -196,7 +196,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(description='Extract text, images, tables, and form data from PDF files.')
-    parser.add_argument('source_folder', help='Source folder containing PDF files')
+    parser.add_argument('--input', '-i', help='Source folder containing PDF files')
     parser.add_argument('--output', '-o', default='converted', help='Output folder (default: converted)')
 
     args = parser.parse_args()
