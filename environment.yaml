@@ -1,0 +1,22 @@
+name: scc450-slm-llm
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python
+  - numpy
+  - pandas
+  - seaborn
+  - matplotlib
+  - jupyter_client
+  - jupyter_console
+  - jupyterlab
+  - pdfplumber
+  - python-dotenv
+  - pip
+
+  - pip:
+      - pymupdf
+      - unstructured
+      - unstructured-ingest
+      - unstructured-client
