@@ -2,7 +2,7 @@ import os
 import json
 from pathlib import Path
 from typing import Dict, List, Any
-import fitz  # PyMuPDF
+import fitz
 import pdfplumber
 from PIL import Image
 import io
@@ -48,12 +48,12 @@ class PDFExtractor:
             if text_content:
                 text_file = output_dir / "text.txt"
                 text_file.write_text(text_content, encoding='utf-8')
-                print(f"  ✓ Extracted text to {text_file}")
+                print(f"Extracted text to {text_file}")
 
             # Extract images
             image_count = self.extract_images(pdf_path, output_dir)
             if image_count > 0:
-                print(f"  ✓ Extracted {image_count} image(s)")
+                print(f"Extracted {image_count} image(s)")
 
             # Extract tables
             tables = self.extract_tables(pdf_path)
@@ -61,7 +61,7 @@ class PDFExtractor:
                 tables_file = output_dir / "tables.json"
                 with open(tables_file, 'w', encoding='utf-8') as f:
                     json.dump(tables, f, indent=2, ensure_ascii=False)
-                print(f"  ✓ Extracted {len(tables)} table(s) to {tables_file}")
+                print(f"Extracted {len(tables)} table(s) to {tables_file}")
 
             # Extract form data
             form_data = self.extract_form_data(pdf_path)
@@ -69,12 +69,12 @@ class PDFExtractor:
                 form_file = output_dir / "form_data.json"
                 with open(form_file, 'w', encoding='utf-8') as f:
                     json.dump(form_data, f, indent=2, ensure_ascii=False)
-                print(f"  ✓ Extracted form data to {form_file}")
+                print(f"Extracted form data to {form_file}")
 
-            print(f"  ✓ Completed: {output_dir}\n")
+            print(f"Completed: {output_dir}\n")
 
         except Exception as e:
-            print(f"  ✗ Error processing {pdf_path}: {str(e)}\n")
+            print(f"Error processing {pdf_path}: {str(e)}\n")
 
     def extract_text(self, pdf_path: Path) -> str:
         """Extract text content from PDF."""
@@ -87,7 +87,7 @@ class PDFExtractor:
                     if text:
                         text_content.append(f"=== Page {page_num} ===\n{text}\n")
         except Exception as e:
-            print(f"  Warning: Error extracting text: {str(e)}")
+            print(f"Warning: Error extracting text: {str(e)}")
 
         return "\n".join(text_content)
 
@@ -121,7 +121,7 @@ class PDFExtractor:
             doc.close()
 
         except Exception as e:
-            print(f"  Warning: Error extracting images: {str(e)}")
+            print(f"Warning: Error extracting images: {str(e)}")
 
         return image_count
 
@@ -144,7 +144,7 @@ class PDFExtractor:
                             all_tables.append(table_data)
 
         except Exception as e:
-            print(f"  Warning: Error extracting tables: {str(e)}")
+            print(f"Warning: Error extracting tables: {str(e)}")
 
         return all_tables
 
@@ -186,7 +186,7 @@ class PDFExtractor:
             doc.close()
 
         except Exception as e:
-            print(f"  Warning: Error extracting form data: {str(e)}")
+            print(f"Warning: Error extracting form data: {str(e)}")
 
         return form_data if form_data["has_form"] else None
 
@@ -201,7 +201,7 @@ def main():
 
     args = parser.parse_args()
 
-    extractor = PDFExtractor(args.source_folder, args.output)
+    extractor = PDFExtractor(args.input, args.output)
     extractor.extract_from_folder()
 
     print("Extraction complete!")
