@@ -9,4 +9,9 @@ dependencies = [
     "matplotlib>=3.10.7",
     "numpy<2",
     "pandas>=2.3.3",
+    "pdfplumber>=0.11.8",
+    "pillow>=12.0.0",
+    "pymupdf>=1.26.6",
+    "python-dotenv>=1.2.1",
+    "unstructured-ingest>=1.2.21",
 ]
