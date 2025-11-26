@@ -2,4 +2,5 @@ Trafford*
 .venv/
 .DS_Store
 converted
+extracted
 .env
