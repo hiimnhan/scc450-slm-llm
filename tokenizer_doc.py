@@ -155,6 +155,18 @@ print(f'\n new json paths are:\n{output_json_file_paths}') # path checking
 #========================================================
 
 
+def tokenizer_func(text_value):
+
+
+
+
+
+
+
+    return tokenized_text_value
+
+
+
 
 
 def tokenize_json(old_paths, new_paths):
@@ -172,31 +184,100 @@ def tokenize_json(old_paths, new_paths):
     print(f'JSON data starts from here:')
     print(f'JSON data starts from here:')
     print(f'JSON data starts from here:\n\n')
+    # count = 0
+    for json_path, new_path in zip(old_paths, new_paths):
 
-    for json_path in old_paths:
         with open(json_path, 'r', encoding='utf-8') as f:
             json_data = json.load(f)
             json_data = pd.DataFrame(json_data)
-            print(f'\n{json_data.columns}\n')
-            print(f'\n{json_data.rows}\n')
+            # print(f'\n{json_data.columns}\n')
+            # print(f'\n{json_data.rows}\n')
+            json_data.info()
+
+
+            # if the num of cols == 0 return - image file
+            # add col has_image == true and send file straight to new path
+
+            if 'type' not in json_data.columns: # considering .empty to use
+                # an image file as the json is empty
+                # altered_json_data = json_data.copy()
+                altered_json_data = pd.DataFrame([{'image_file': True}])
+                altered_json_data = altered_json_data.to_dict(orient='records')
+                with open(new_path, 'w', encoding='utf-8') as fnew:
+                    json.dump(altered_json_data, fnew, indent=2)
+
+
+            else:
+                # applies tokenization func to all relevant sections
+                altered_json_data = pd.DataFrame()
+
+                # text = value and section
+                if (json_data['type'] == 'text').any():
+                    json_text_data = json_data[(json_data['type'] == 'text') & (json_data['value'].apply(lambda x: tokenizer_func(x))) & (json_data['section'].apply(lambda x: tokenizer_func(x)))] ###
+                    altered_json_data = pd.concat([altered_json_data, json_text_data], ignore_index=True)
+
+                # header = value and section
+                if (json_data['type'] == 'header').any():
+                    json_header_data = json_data[(json_data['type'] == 'header') & (json_data['value'].apply(lambda x: tokenizer_func(x))) & (json_data['section'].apply(lambda x: tokenizer_func(x)))] ####
+                    altered_json_data = pd.concat([altered_json_data, json_header_data], ignore_index=True)
+
+
+                # checkbox = question and section
+                if (json_data['type'] == 'checkbox').any():
+                    json_checkbox_data = json_data[(json_data['type'] == 'checkbox') & (json_data['question'].apply(lambda x: tokenizer_func(x))) & (json_data['section'].apply(lambda x: tokenizer_func(x)))]
+                    altered_json_data = pd.concat([altered_json_data, json_checkbox_data], ignore_index=True)
+
+                # image = section
+                if (json_data['type'] == 'image').any():
+                    json_image_data = json_data[(json_data['type'] == 'image') & (json_data['section'].apply(lambda x: tokenizer_func(x)))] #####
+                    altered_json_data = pd.concat([altered_json_data, json_image_data], ignore_index=True)
+
+
+                ##### may need to add NaN filter for rows that dont meet criteria - question - check other cols
+                # if 'question' in altered_json_data.columns:
+                #     altered_json_data = altered_json_data[(altered_json_data['type'] != 'checkbox') | (altered_json_data['question'].notna())]
+
+                # altered_json_data = altered_json_data.to_dict(orient='records')
+                # with open(new_path, 'w', encoding='utf-8') as f_tokenized:
+                #     json.dump(altered_json_data, f_tokenized, indent=2)
+
+                #========================================================
+                #========================================================
+                #========================================================
+                #========================================================
+                #========================================================
+                #========================================================
+                #========================================================
+
+                # print(json_data['type'].value_counts())
+                #
+                # print(f'\n{json_data.columns}\n')
+                # count += 1
+        break
+
+
+    # print(f'count:\n{count}') ### 371 json empty
+            #     print(json_data['type'].value_counts())
+
+            # if type == 'checkbox' look for ['question'] and tokenize
+            # send file to new path
+
+            # if type == 'text' look for ['value'] and tokenize
+            # ensure that vals like 'Planning Portal Reference: PP-11298341 == Planning Portal Reference: <PPR number>
+
+            # if type == 'header'
+            # if type == 'image'
 
 
             # json_data = pd.DataFrame(json_data)
-            # print(json_data['type'].value_counts())
             # # print(json_data.head(20))
-
-
-
-
-
-            break
+            # break
 
 
 tokenize_json(old_json_file_paths, output_json_file_paths)
 
 
-def iterate_through_jsons_in_subfiles():
-    pass
+
 
 
 
