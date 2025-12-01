@@ -15,6 +15,7 @@ import math
 from bs4 import MarkupResemblesLocatorWarning
 import warnings
 import time
+from transformers import AutoTokenizer
 
 warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
@@ -393,7 +394,7 @@ cleaned_json(old_json_file_paths, output_json_file_paths)
 
 #===============================================================
 #===============================================================
-# tokenizing jsonl files with gpt and gemma specific tokenizers
+# tokenizing jsonl files with phi and gemma specific tokenizers
 #===============================================================
 #===============================================================
 
@@ -451,8 +452,33 @@ def gemma_tokenized_jsons(new_json_paths):
 
 
 
-def gpt_tokenized_jsons(new_json_paths):
-    pass
+def phi_tokenized_jsons(new_json_paths):
+    '''
+    phi 3 mini tokenizer
+    '''
+
+    # initialising the model
+    tokenizer = AutoTokenizer.from_pretrained("microsoft/phi-3-mini-4k-instruct")
+
+    # going through all paths
+    for json_path in new_json_paths:
+        tokenized = []
+        # going through each file by line
+        with open(json_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                if line:  # no empty lines , messes with model - ignore, error was elsewhere
+                    object = json.loads(line)
+                    text = object['input']
+
+
+                    encoder = tokenizer(text, add_special_tokens=True)
+                    tokenized.append({'input_ids': encoder['input_ids'], 'attention_mask':encoder['attention_mask']})
+
+        with open(json_path, 'w', encoding='utf-8') as f:
+            for token in tokenized:
+                f.write(json.dumps(token, ensure_ascii=False) + '\n')
+        print(f'PHI TOKENIZED FILE SAVED AT: {json_path}')
+
 
 
 
@@ -489,16 +515,16 @@ def gpt_tokenized_jsons(new_json_paths):
 #============================================================================================
 
 
-chosen_model = input('Please select:\n- 1 for gemma file tokenization \n- 2 for gpt file tokenization\n Your input: ')
+chosen_model = input('Please select:\n- 1 for gemma file tokenization \n- 2 for phi file tokenization\n Your input: ')
 
 if chosen_model == 1:
     print(f'\n...Please wait while files are tokenized...\n')
     time.sleep(5)
     gemma_tokenized_jsons(output_json_file_paths)
 elif chosen_model == 2:
-    # print(f'\n...Please wait while files are tokenized...\n')
-    # time.sleep(5)
-    # gpt_tokenized_jsons(output_json_file_paths)
+    print(f'\n...Please wait while files are tokenized...\n')
+    time.sleep(5)
+    phi_tokenized_jsons(output_json_file_paths)
     pass
 else:
     print('invalid input, tokenizing with gemma:')
