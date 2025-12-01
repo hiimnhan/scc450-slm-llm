@@ -10,6 +10,7 @@ import string
 from nltk.corpus import stopwords
 import unicodedata
 from bs4 import BeautifulSoup
+from gemma import gm
 
 #======================================================
 # path to parent file and placement of output folder
@@ -157,7 +158,7 @@ print(f'\n new json paths are:\n{output_json_file_paths}') # path checking
 
 
 #======================================================================
-# cleaning and tokenizing json files and sending them to new path file
+# cleaning  json files and sending them to new path file
 #======================================================================
 
 
@@ -222,7 +223,7 @@ def cleaner_func(text):
 
 
 
-def cleaned_tokenize_json(old_paths, new_paths):
+def cleaned_json(old_paths, new_paths):
     '''
     access json one by one
 
@@ -350,7 +351,7 @@ def cleaned_tokenize_json(old_paths, new_paths):
                 #
                 # print(f'\n{json_data.columns}\n')
                 # count += 1
-        break
+        # break
 
 
     # print(f'count:\n{count}') ### 371 json empty
@@ -371,7 +372,57 @@ def cleaned_tokenize_json(old_paths, new_paths):
             # break
 
 
-cleaned_tokenize_json(old_json_file_paths, output_json_file_paths)
+cleaned_json(old_json_file_paths, output_json_file_paths)
+
+
+
+#===============================================================
+#===============================================================
+# tokenizing jsonl files with gpt and gemma specific tokenizers
+#===============================================================
+#===============================================================
+
+
+def gemma_tokenized_jsons(new_json_paths):
+
+    '''
+    - get input form the files
+    - get the gemma tokenizer
+    - run the input line by line through it
+    - send it back to the same file with the embeddings
+    '''
+
+    # initialising the model
+    tokenizer = gm.text.Gemma3Tokenizer()
+
+    tokenized = []
+    # going through all paths
+    for json_path in new_json_paths:
+        # going through each file by line
+        with open(json_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                object = json.loads(line)
+                text = object['input']
+
+                # converting to ids for training and storing them
+                token_ids = tokenizer.encode(text, add_bos=True)
+                tokenized.append({'input_ids': token_ids})
+
+
+        # overwriting original file with new embeddings
+        with open(json_path, 'r', encoding='utf-8') as f:
+            for token in tokenized:
+                f.write(json.dumps(token, ensure_ascii=False) + '\n')
+
+
+
+
+
+            # json_data = json.load(f)
+            # json_data = pd.DataFrame(json_data)
+            # # print(f'\n{json_data.columns}\n')
+            # # print(f'\n{json_data.rows}\n')
+            # json_data.info()
 
 
 
@@ -380,6 +431,8 @@ cleaned_tokenize_json(old_json_file_paths, output_json_file_paths)
 
 
 
+def gpt_tokenized_jsons(new_json_paths):
+    pass
 
 
 
@@ -387,13 +440,33 @@ cleaned_tokenize_json(old_json_file_paths, output_json_file_paths)
 
 
 
+#============================================================================================
+#============================================================================================
+#============================================================================================
+#============================================================================================
+#============================================================================================
+#============================================================================================
+#============================================================================================
+# comment out one below to change model tokenization embeddings for model ( gemma or gpt)
+# comment out one below to change model tokenization embeddings for model ( gemma or gpt)
+# comment out one below to change model tokenization embeddings for model ( gemma or gpt)
+# comment out one below to change model tokenization embeddings for model ( gemma or gpt)
+# comment out one below to change model tokenization embeddings for model ( gemma or gpt)
+# comment out one below to change model tokenization embeddings for model ( gemma or gpt)
+#============================================================================================
+#============================================================================================
+#============================================================================================
+#============================================================================================
+#============================================================================================
+#============================================================================================
+#============================================================================================
+#============================================================================================
+#============================================================================================
+
+gemma_tokenized_jsons(output_json_file_paths)
 
 
-
-
-
-
-
+# gpt_tokenized_jsons(output_json_file_paths)
 
 
 
