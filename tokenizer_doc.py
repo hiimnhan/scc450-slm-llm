@@ -11,6 +11,12 @@ from nltk.corpus import stopwords
 import unicodedata
 from bs4 import BeautifulSoup
 from gemma import gm
+import math
+from bs4 import MarkupResemblesLocatorWarning
+import warnings
+import time
+
+warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 
 #======================================================
 # path to parent file and placement of output folder
@@ -40,8 +46,8 @@ def Folder_path(foldername):
 
 parent_folder_path, base_dir = Folder_path(extracted_file)
 
-print(f'\n folder path is: {parent_folder_path}')
-print(f'\n path to place output tokenized files is: {base_dir}')
+# print(f'\n folder path is: {parent_folder_path}')
+# print(f'\n path to place output tokenized files is: {base_dir}')
 
 #=========================================
 # subfolder file paths
@@ -57,8 +63,8 @@ def subfolder_paths_func(foldername):
 
 subfolder_paths_list, subfolder_names_list = subfolder_paths_func(parent_folder_path)
 
-print(f'\n subfolder paths are: {subfolder_paths_list}')
-print(f'\n subfolder names are: {subfolder_names_list}')
+# print(f'\n subfolder paths are: {subfolder_paths_list}')
+# print(f'\n subfolder names are: {subfolder_names_list}')
 
 
 #==================================================
@@ -104,7 +110,7 @@ def create_output_and_subfolder_folders(subfolder_names, base_dir):
 
 output_subfolder_paths = create_output_and_subfolder_folders(subfolder_names_list, base_dir)
 
-print(f'\n new subfolder paths are: {output_subfolder_paths}') # path checking
+# print(f'\n new subfolder paths are: {output_subfolder_paths}') # path checking
 
 
 #==================================================
@@ -126,9 +132,9 @@ def json_paths(subfolder_paths, output_subfolder_pathing):
     for subfolder, output_path, old_path in zip(subfolder_json_file_names, output_subfolder_pathing, subfolder_paths):
         # print(f'\nthis is a subfolder:\n {subfolder}\n')
         for file in subfolder:
-            print(f'\nthis is a file in a subfolder:\n {file}')
-            print(f' this file is allocated to new path: {output_path}')
-            print(f' this file is allocated to old path: {old_path}')
+            # print(f'\nthis is a file in a subfolder:\n {file}')
+            # print(f' this file is allocated to new path: {output_path}')
+            # print(f' this file is allocated to old path: {old_path}')
 
             new_file_json_pathing = os.path.join(output_path, file)
             old_file_json_pathing = os.path.join(old_path, file)
@@ -136,11 +142,11 @@ def json_paths(subfolder_paths, output_subfolder_pathing):
             new_subfolder_json_pathing.append(new_file_json_pathing)
             old_subfolder_json_pathing.append(old_file_json_pathing)
 
-        print(f'\n#=================================#')
-        print(f'#=================================#')
-        print(f'#======== new subfolder ==========#')
-        print(f'#=================================#')
-        print(f'#=================================#\n')
+        # print(f'\n#=================================#')
+        # print(f'#=================================#')
+        # print(f'#======== new subfolder ==========#')
+        # print(f'#=================================#')
+        # print(f'#=================================#\n')
 
 
 
@@ -150,9 +156,9 @@ def json_paths(subfolder_paths, output_subfolder_pathing):
 
 json_file_names, output_json_file_paths, old_json_file_paths = json_paths(subfolder_paths_list, output_subfolder_paths)
 
-print(f'\n new json names are:\n{json_file_names}') # name checking
-print(f'\n old json paths are:\n{old_json_file_paths}') # path checking
-print(f'\n new json paths are:\n{output_json_file_paths}') # path checking
+# print(f'\n new json names are:\n{json_file_names}') # name checking
+# print(f'\n old json paths are:\n{old_json_file_paths}') # path checking
+# print(f'\n new json paths are:\n{output_json_file_paths}') # path checking
 
 
 
@@ -178,6 +184,11 @@ def cleaner_func(text):
     '''
 
     # Parsing html
+    if text is None or (isinstance(text, float) and math.isnan(text)): # missing value in value for check box
+        text = 'MISSING'
+    elif isinstance(text,bool):
+        text = str(text)
+
     soup = BeautifulSoup(text, "html.parser")
 
     # only take out the text
@@ -246,7 +257,7 @@ def cleaned_json(old_paths, new_paths):
             json_data = pd.DataFrame(json_data)
             # print(f'\n{json_data.columns}\n')
             # print(f'\n{json_data.rows}\n')
-            json_data.info()
+            # json_data.info()
 
 
             # if the num of cols == 0 return - image file
@@ -255,10 +266,12 @@ def cleaned_json(old_paths, new_paths):
             if 'type' not in json_data.columns: # considering .empty to use
                 # an image file as the json is empty
                 # altered_json_data = json_data.copy()
-                altered_json_data = pd.DataFrame([{'image_file': True}])
+                altered_json_data = pd.DataFrame([{'input': 'This file contains an image'}])
                 altered_json_data = altered_json_data.to_dict(orient='records')
-                with open(new_path, 'w', encoding='utf-8') as fnew:
-                    json.dump(altered_json_data, fnew, indent=2)
+                with open(new_path, 'w', encoding='utf-8') as f_new:
+                    for line in altered_json_data:
+                        f_new.write(json.dumps(line, ensure_ascii=False) + '\n')
+                    # json.dump(altered_json_data, fnew, indent=2)
 
 
             else:
@@ -294,42 +307,44 @@ def cleaned_json(old_paths, new_paths):
             # text_col = type - a,b,c - section - value/question - value
 
 
-            joined_json_data = pd.DataFrame()
-            if (json_data['type'] == 'text').any():  # value and section
-                text_mask = altered_json_data['type'] == 'text'
+                joined_json_data = pd.DataFrame()
+                if (altered_json_data['type'] == 'text').any():  # value and section
+                    text_mask = altered_json_data['type'] == 'text'
 
-                altered_json_data.loc[text_mask, 'full_text'] = ('Text: ' + altered_json_data.loc[text_mask, 'section'].astype(str) + ' ' + altered_json_data.loc[text_mask, 'value'].astype(str))
-
-
-            if (json_data['type'] == 'header').any(): # value and section
-                header_mask = altered_json_data['type'] == 'header'
-
-                altered_json_data.loc[header_mask, 'full_text'] = ('Header: ' + altered_json_data.loc[header_mask, 'section'].astype(str) + ' ' + altered_json_data.loc[header_mask, 'value'].astype(str))
+                    altered_json_data.loc[text_mask, 'full_text'] = ('Text: ' + altered_json_data.loc[text_mask, 'section'].astype(str) + ' ' + altered_json_data.loc[text_mask, 'value'].astype(str))
 
 
-            if (json_data['type'] == 'checkbox').any(): # question and section
+                if (altered_json_data['type'] == 'header').any(): # value and section
+                    header_mask = altered_json_data['type'] == 'header'
 
-                checkbox_mask = altered_json_data['type'] == 'checkbox'
-
-                altered_json_data.loc[checkbox_mask, 'full_text'] = ('Checkbox: ' + altered_json_data.loc[checkbox_mask, 'section'].astype(str) + 'QUESTION:' + altered_json_data.loc[checkbox_mask, 'question'].astype(str)+ ' ANSWER:' + altered_json_data.loc[checkbox_mask, 'value'].astype(str))
-
-
-            if (json_data['type'] == 'image').any(): # section and number count
-                image_mask = altered_json_data['type'] == 'image'
-
-                altered_json_data.loc[image_mask, 'full_text'] = ('Image: ' + altered_json_data.loc[image_mask, 'section'].astype(str))
-
-            joined_json_data['input'] = pd.DataFrame(altered_json_data['full_text'])
-            # joined_json_data.insert(loc=0, column='Input', value='input') # adding the key
-
-            print(joined_json_data)
+                    altered_json_data.loc[header_mask, 'full_text'] = ('Header: ' + altered_json_data.loc[header_mask, 'section'].astype(str) + ' ' + altered_json_data.loc[header_mask, 'value'].astype(str))
 
 
-            # sending json to new file, after cleaning ---- using jsonl formatting
-            joined_json_data = joined_json_data.to_dict(orient='records')
-            with open(new_path, 'w', encoding='utf-8') as f:
-                for line in joined_json_data:
-                    f.write(json.dumps(line, ensure_ascii=False) +'\n')
+                if (altered_json_data['type'] == 'checkbox').any(): # question and section
+
+                    checkbox_mask = altered_json_data['type'] == 'checkbox'
+
+                    altered_json_data.loc[checkbox_mask, 'full_text'] = ('Checkbox: ' + altered_json_data.loc[checkbox_mask, 'section'].astype(str) + 'QUESTION:' + altered_json_data.loc[checkbox_mask, 'question'].astype(str)+ ' ANSWER:' + altered_json_data.loc[checkbox_mask, 'value'].astype(str))
+
+
+                if (altered_json_data['type'] == 'image').any(): # section and number count
+                    image_mask = altered_json_data['type'] == 'image'
+
+                    altered_json_data.loc[image_mask, 'full_text'] = ('Image: ' + altered_json_data.loc[image_mask, 'section'].astype(str))
+
+                joined_json_data['input'] = pd.DataFrame(altered_json_data['full_text'])
+                # joined_json_data.insert(loc=0, column='Input', value='input') # adding the key
+
+                # print(joined_json_data)
+
+
+                # sending json to new file, after cleaning ---- using jsonl formatting
+                joined_json_data = joined_json_data.to_dict(orient='records')
+                with open(new_path, 'w', encoding='utf-8') as f:
+                    for line in joined_json_data:
+                        if line:
+                            f.write(json.dumps(line, ensure_ascii=False) +'\n')
+                print(f'CLEANED FILE SAVED AT: {new_path}')
 
 
 
@@ -395,26 +410,31 @@ def gemma_tokenized_jsons(new_json_paths):
     # initialising the model
     tokenizer = gm.text.Gemma3Tokenizer()
 
-    tokenized = []
+
     # going through all paths
     for json_path in new_json_paths:
+        tokenized = []
         # going through each file by line
         with open(json_path, 'r', encoding='utf-8') as f:
             for line in f:
-                object = json.loads(line)
-                text = object['input']
+                if line: # no empty lines , messes with model - ignore, error was elsewhere
+                    object = json.loads(line)
+                    text = object['input']
 
-                # converting to ids for training and storing them
-                token_ids = tokenizer.encode(text, add_bos=True)
-                tokenized.append({'input_ids': token_ids})
+                    # converting to ids for training and storing them
+                    token_ids = tokenizer.encode(text, add_bos=True, add_eos=True)
+                    tokenized.append({'input_ids': token_ids})
 
-
+        # problem path
+        # print (f'PROBLEM HERE{json_path}')
         # overwriting original file with new embeddings
-        with open(json_path, 'r', encoding='utf-8') as f:
+        with open(json_path, 'w', encoding='utf-8') as f:
             for token in tokenized:
                 f.write(json.dumps(token, ensure_ascii=False) + '\n')
+        print(f'GEMMA TOKENIZED FILE SAVED AT: {json_path}')
 
 
+        # break
 
 
 
@@ -437,8 +457,13 @@ def gpt_tokenized_jsons(new_json_paths):
 
 
 
+#==========================
+#   buffer
+#==========================
 
-
+# # ensuring time to update
+# print(f'\n...Please wait while files are tokenized...\n')
+# time.sleep(3)
 
 #============================================================================================
 #============================================================================================
@@ -463,15 +488,23 @@ def gpt_tokenized_jsons(new_json_paths):
 #============================================================================================
 #============================================================================================
 
-gemma_tokenized_jsons(output_json_file_paths)
 
+chosen_model = input('Please select:\n- 1 for gemma file tokenization \n- 2 for gpt file tokenization\n Your input: ')
 
-# gpt_tokenized_jsons(output_json_file_paths)
-
-
-
-
-
+if chosen_model == 1:
+    print(f'\n...Please wait while files are tokenized...\n')
+    time.sleep(5)
+    gemma_tokenized_jsons(output_json_file_paths)
+elif chosen_model == 2:
+    # print(f'\n...Please wait while files are tokenized...\n')
+    # time.sleep(5)
+    # gpt_tokenized_jsons(output_json_file_paths)
+    pass
+else:
+    print('invalid input, tokenizing with gemma:')
+    print(f'\n...Please wait while files are tokenized...\n')
+    time.sleep(5)
+    gemma_tokenized_jsons(output_json_file_paths)
 
 
 
