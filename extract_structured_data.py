@@ -76,13 +76,21 @@ def extract_structured_data(json_path: str) -> List[Section]:
     pending_checkbox_question = None
     i = 0
 
+    # Create a default section if no Title elements exist
+    has_title = any(elem.get('type') == 'Title' for elem in data)
+    if not has_title and data:
+        current_section = Section(
+            title="Document Content",
+            page_number=data[0].get('metadata', {}).get('page_number', 0) if data else 0
+        )
+
     while i < len(data):
         element = data[i]
         prev_element = data[i - 1] if i > 0 else None
         next_element = data[i + 1] if i + 1 < len(data) else None
 
         element_type = element['type']
-        text = element.get('text', '').strip()
+        text = (element.get('text') or '').strip()
         page_number = element['metadata'].get('page_number', 0)
 
         # New section (Title element)
@@ -207,7 +215,7 @@ def export_to_flat_list(sections: List[Section]) -> List[Dict[str, Any]]:
                 elif isinstance(item, HeaderContent):
                     # Header item
                     flat_list.append({
-                        "type": "header",
+                        "type": "text",
                         "value": item.text,
                         "section": section_title,
                         "page_number": item.page_number
