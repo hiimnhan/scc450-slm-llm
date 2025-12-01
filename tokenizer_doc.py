@@ -22,7 +22,7 @@ warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
 #======================================================
 # path to parent file and placement of output folder
 #======================================================
-
+print('\n...please wait while program loads...\n')
 
 extracted_file = r'extracted_trafford\extracted'
 
@@ -244,12 +244,12 @@ def cleaned_json(old_paths, new_paths):
 
     send the file to new path in tokenised_trafford
     '''
-
-    print(f'\n\nJSON data starts from here:')
-    print(f'JSON data starts from here:')
-    print(f'JSON data starts from here:')
-    print(f'JSON data starts from here:')
-    print(f'JSON data starts from here:\n\n')
+    #
+    # print(f'\n\nJSON data starts from here:')
+    # print(f'JSON data starts from here:')
+    # print(f'JSON data starts from here:')
+    # print(f'JSON data starts from here:')
+    # print(f'JSON data starts from here:\n\n')
     # count = 0
     for json_path, new_path in zip(old_paths, new_paths):
 
@@ -494,41 +494,24 @@ def phi_tokenized_jsons(new_json_paths):
 #============================================================================================
 #============================================================================================
 #============================================================================================
-#============================================================================================
-#============================================================================================
-#============================================================================================
-#============================================================================================
-# comment out one below to change model tokenization embeddings for model ( gemma or gpt)
-# comment out one below to change model tokenization embeddings for model ( gemma or gpt)
-# comment out one below to change model tokenization embeddings for model ( gemma or gpt)
-# comment out one below to change model tokenization embeddings for model ( gemma or gpt)
-# comment out one below to change model tokenization embeddings for model ( gemma or gpt)
-# comment out one below to change model tokenization embeddings for model ( gemma or gpt)
-#============================================================================================
-#============================================================================================
-#============================================================================================
-#============================================================================================
-#============================================================================================
-#============================================================================================
+#           allows user to choose which model tokenizer they would like to use
 #============================================================================================
 #============================================================================================
 #============================================================================================
 
+chosen_model = input('Please select:\n- gemma for gemma file tokenization \n- phi for phi file tokenization\n Your input: ')
 
-chosen_model = input('Please select:\n- 1 for gemma file tokenization \n- 2 for phi file tokenization\n Your input: ')
-
-if chosen_model == 1:
-    print(f'\n...Please wait while files are tokenized...\n')
+if chosen_model == 'gemma':
+    print(f'\n...Please wait while files are tokenized with gemma...\n')
     time.sleep(5)
     gemma_tokenized_jsons(output_json_file_paths)
-elif chosen_model == 2:
-    print(f'\n...Please wait while files are tokenized...\n')
+elif chosen_model == 'phi':
+    print(f'\n...Please wait while files are tokenized with phi...\n')
     time.sleep(5)
     phi_tokenized_jsons(output_json_file_paths)
-    pass
 else:
     print('invalid input, tokenizing with gemma:')
-    print(f'\n...Please wait while files are tokenized...\n')
+    print(f'\n...Please wait while files are tokenized with gemma...\n')
     time.sleep(5)
     gemma_tokenized_jsons(output_json_file_paths)
 
