@@ -4,6 +4,12 @@ import pandas as pd
 import json
 import numpy as np
 import sys
+from ftfy import fix_text
+import re
+import string
+from nltk.corpus import stopwords
+import unicodedata
+from bs4 import BeautifulSoup
 
 #======================================================
 # path to parent file and placement of output folder
@@ -150,26 +156,73 @@ print(f'\n new json paths are:\n{output_json_file_paths}') # path checking
 
 
 
-#========================================================
-# tokenizing json files and sending them to new path file
-#========================================================
+#======================================================================
+# cleaning and tokenizing json files and sending them to new path file
+#======================================================================
 
 
-def tokenizer_func(text_value):
+def cleaner_func(text):
+    '''
+    - clean text
+        - mojibake
+        - lecture ---- example: fixed = broken.encode('latin-1').decode('utf-8') = â€œHelloâ€• = “Hello”
+        - remove unwanted characters
+        - strip and join to ensure clear and consistent spacing
+        - remove filler words
+        - remove punctuation
+    - create tokenizer for chatGPT # diff func
+    - create tokenizer for Gemma # different func
+    - return value
+
+    '''
+
+    # Parsing html
+    soup = BeautifulSoup(text, "html.parser")
+
+    # only take out the text
+    cleaned_text = soup.get_text(separator=" ")
+
+
+
+    # removing the mojibake from the text
+    cleaned_text = fix_text(cleaned_text)
+
+
+    # normalising any unicode chars to single format - umlow and accents
+    cleaned_text = unicodedata.normalize("NFC", cleaned_text)
+
+
+    # making sure that there are no invisible chars ---- replace, with, from
+    cleaned_text = re.sub(r"[\u0000-\u001F\u007F-\u009F]", "", cleaned_text)
+
+
+
+    # removing punctuation - replaced chars, replaced with, deleted chars( all punctuation) -- gonna add : back in when making text str
+    # keep_apos_com = string.punctuation.replace(("',","")
+    # cleaned_text = cleaned_text.maketrans('','', keep_apos_com)
+
+    # not removing them, tranformer models do not need them removed for tokenization --- getting rid of stop words
+    # stop_words = set(stopwords.words('english'))
+    # cleaned_text = ' '.join(word for word in cleaned_text.split() if word not in stop_words)
+
+    # getting rid of caps - there are business names, poss keep them
+    # cleaned_text = cleaned_text.lower()
+
+
+
+    # making sure that there is only 1 space between words
+    cleaned_text = ' '.join(cleaned_text.split())
+
+
+
+
+    return cleaned_text
 
 
 
 
 
-
-
-    return tokenized_text_value
-
-
-
-
-
-def tokenize_json(old_paths, new_paths):
+def cleaned_tokenize_json(old_paths, new_paths):
     '''
     access json one by one
 
@@ -208,38 +261,82 @@ def tokenize_json(old_paths, new_paths):
 
 
             else:
-                # applies tokenization func to all relevant sections
+                # applies cleaner func to all relevant sections
                 altered_json_data = pd.DataFrame()
 
                 # text = value and section
                 if (json_data['type'] == 'text').any():
-                    json_text_data = json_data[(json_data['type'] == 'text') & (json_data['value'].apply(lambda x: tokenizer_func(x))) & (json_data['section'].apply(lambda x: tokenizer_func(x)))] ###
+                    json_text_data = json_data[(json_data['type'] == 'text') & (json_data['value'].apply(lambda x: cleaner_func(x))) & (json_data['section'].apply(lambda x: cleaner_func(x)))] ###
                     altered_json_data = pd.concat([altered_json_data, json_text_data], ignore_index=True)
 
                 # header = value and section
                 if (json_data['type'] == 'header').any():
-                    json_header_data = json_data[(json_data['type'] == 'header') & (json_data['value'].apply(lambda x: tokenizer_func(x))) & (json_data['section'].apply(lambda x: tokenizer_func(x)))] ####
+                    json_header_data = json_data[(json_data['type'] == 'header') & (json_data['value'].apply(lambda x: cleaner_func(x))) & (json_data['section'].apply(lambda x: cleaner_func(x)))] ####
                     altered_json_data = pd.concat([altered_json_data, json_header_data], ignore_index=True)
 
 
                 # checkbox = question and section
                 if (json_data['type'] == 'checkbox').any():
-                    json_checkbox_data = json_data[(json_data['type'] == 'checkbox') & (json_data['question'].apply(lambda x: tokenizer_func(x))) & (json_data['section'].apply(lambda x: tokenizer_func(x)))]
+                    json_checkbox_data = json_data[(json_data['type'] == 'checkbox') & (json_data['question'].apply(lambda x: cleaner_func(x))) & (json_data['section'].apply(lambda x: cleaner_func(x)))]
                     altered_json_data = pd.concat([altered_json_data, json_checkbox_data], ignore_index=True)
 
                 # image = section
                 if (json_data['type'] == 'image').any():
-                    json_image_data = json_data[(json_data['type'] == 'image') & (json_data['section'].apply(lambda x: tokenizer_func(x)))] #####
+                    json_image_data = json_data[(json_data['type'] == 'image') & (json_data['section'].apply(lambda x: cleaner_func(x)))] #####
                     altered_json_data = pd.concat([altered_json_data, json_image_data], ignore_index=True)
+
+            # print(altered_json_data)
+
+            #===========================================================================================
+            # joining type into col for text as 'type:' ----- 'header: value, section, question' etc...
+            #===========================================================================================
+            # text_col = type - a,b,c - section - value/question - value
+
+
+            joined_json_data = pd.DataFrame()
+            if (json_data['type'] == 'text').any():  # value and section
+                text_mask = altered_json_data['type'] == 'text'
+
+                altered_json_data.loc[text_mask, 'full_text'] = ('Text: ' + altered_json_data.loc[text_mask, 'section'].astype(str) + ' ' + altered_json_data.loc[text_mask, 'value'].astype(str))
+
+
+            if (json_data['type'] == 'header').any(): # value and section
+                header_mask = altered_json_data['type'] == 'header'
+
+                altered_json_data.loc[header_mask, 'full_text'] = ('Header: ' + altered_json_data.loc[header_mask, 'section'].astype(str) + ' ' + altered_json_data.loc[header_mask, 'value'].astype(str))
+
+
+            if (json_data['type'] == 'checkbox').any(): # question and section
+
+                checkbox_mask = altered_json_data['type'] == 'checkbox'
+
+                altered_json_data.loc[checkbox_mask, 'full_text'] = ('Checkbox: ' + altered_json_data.loc[checkbox_mask, 'section'].astype(str) + 'QUESTION:' + altered_json_data.loc[checkbox_mask, 'question'].astype(str)+ ' ANSWER:' + altered_json_data.loc[checkbox_mask, 'value'].astype(str))
+
+
+            if (json_data['type'] == 'image').any(): # section and number count
+                image_mask = altered_json_data['type'] == 'image'
+
+                altered_json_data.loc[image_mask, 'full_text'] = ('Image: ' + altered_json_data.loc[image_mask, 'section'].astype(str))
+
+            joined_json_data['input'] = pd.DataFrame(altered_json_data['full_text'])
+            # joined_json_data.insert(loc=0, column='Input', value='input') # adding the key
+
+            print(joined_json_data)
+
+
+            # sending json to new file, after cleaning ---- using jsonl formatting
+            joined_json_data = joined_json_data.to_dict(orient='records')
+            with open(new_path, 'w', encoding='utf-8') as f:
+                for line in joined_json_data:
+                    f.write(json.dumps(line, ensure_ascii=False) +'\n')
+
+
 
 
                 ##### may need to add NaN filter for rows that dont meet criteria - question - check other cols
                 # if 'question' in altered_json_data.columns:
                 #     altered_json_data = altered_json_data[(altered_json_data['type'] != 'checkbox') | (altered_json_data['question'].notna())]
 
-                # altered_json_data = altered_json_data.to_dict(orient='records')
-                # with open(new_path, 'w', encoding='utf-8') as f_tokenized:
-                #     json.dump(altered_json_data, f_tokenized, indent=2)
 
                 #========================================================
                 #========================================================
@@ -274,7 +371,7 @@ def tokenize_json(old_paths, new_paths):
             # break
 
 
-tokenize_json(old_json_file_paths, output_json_file_paths)
+cleaned_tokenize_json(old_json_file_paths, output_json_file_paths)
 
 
 
