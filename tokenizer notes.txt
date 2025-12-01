@@ -1,0 +1,82 @@
+  {
+    "type": "text",
+    "value": "a) Does the application relate to details or reserved matters on an existing permission that was granted prior to the introduction of the CIL charge in the relevant local authority area?",
+    "section": "3. Reserved Matters Applications",
+    "page_number": 2
+  },
+
+
+    {
+    "type": "checkbox",
+    "question": "a) Does the application relate to details or reserved matters on an existing permission that was granted prior to the introduction of the CIL charge in the relevant local authority area?",
+    "value": null,
+    "section": "3. Reserved Matters Applications",
+    "page_number": 2
+  },
+
+
+if type text
+    use value for tokenization -- maybe section
+elif type checkbox
+use question for tokenization
+
+
+
+####### ensure that all files are present -  should be 911 files #### there are 834 files and 371 are empty json # does not have .tif files
+
+###### code breaks when reaching empty file with []
+
+
+most cols:
+Index(['type', 'value', 'section', 'page_number', 'question'], dtype='object')
+
+least cols:
+RangeIndex(start=0, stop=0, step=1)
+
+no question:
+Index(['type', 'value', 'section', 'page_number'], dtype='object')
+
+
+
+check all files make it i.e. on this set should be 834
+
+
+
+
+
+# ensure that vals like
+
+- 'Planning Portal Reference: PP-11298341 == Planning Portal Reference: <PPR number>
+
+- postcodes
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -13,6 +13,11 @@ dependencies:
   - jupyterlab
   - pdfplumber
   - python-dotenv
+  - ftfy
+  - nltk
+  - beautifulsoup4
+  - lxml
+  - transformers
   - pip
 
   - pip:
@@ -20,3 +25,4 @@ dependencies:
       - unstructured
       - unstructured-ingest
       - unstructured-client
+      - gemma
