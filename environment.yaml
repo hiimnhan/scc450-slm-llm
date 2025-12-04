@@ -17,7 +17,6 @@ dependencies:
   - nltk
   - beautifulsoup4
   - lxml
-  - transformers
   - pip
 
   - pip:
@@ -26,3 +25,6 @@ dependencies:
       - unstructured-ingest
       - unstructured-client
       - gemma
+      - unsloth
+      - transformers
+      - datasets
