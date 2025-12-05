@@ -30,10 +30,10 @@ def setup_wandb_env(
         os.environ["WANDB_MODE"] = wandb_mode
         if wandb_run_name:
             os.environ["WANDB_NAME"] = wandb_run_name
-        print(f"[W&B] Enabled. Project={wandb_project}, Run={wandb_run_name}, Mode={wandb_mode}")
+        logger.info(f"[W&B] Enabled. Project={wandb_project}, Run={wandb_run_name}, Mode={wandb_mode}")
     else:
         os.environ["WANDB_DISABLED"] = "true"
-        print("[W&B] Disabled (no --wandb_project provided).")
+        logger.info("[W&B] Disabled (no --wandb_project provided).")
 
 
 def parse_args() -> argparse.Namespace:
