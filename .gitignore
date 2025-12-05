@@ -5,3 +5,6 @@ converted
 .env
 extracted*
 tokenized*
+unsloth_compiled_cache
+wandb
+models

@@ -7,7 +7,6 @@ from loguru import logger
 import torch
 from unsloth import FastLanguageModel, UnslothTrainer, UnslothTrainingArguments
 from collator import Collator
-from utils import get_device
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
@@ -18,6 +17,13 @@ PHI_DATASET_ROOT_DIR = os.path.join(PROJECT_ROOT, 'dataset', 'phi-dataset')
 
 SEED = 42
 torch.manual_seed(SEED)
+
+def get_device() -> str:
+    if torch.cuda.is_available():
+        return 'cuda'
+    elif torch.backends.mps.is_available():
+        return 'mps'
+    return 'cpu'
 
 def setup_wandb_env(
     wandb_project: str = None,
@@ -30,10 +36,10 @@ def setup_wandb_env(
         os.environ["WANDB_MODE"] = wandb_mode
         if wandb_run_name:
             os.environ["WANDB_NAME"] = wandb_run_name
-        logger.info(f"[W&B] Enabled. Project={wandb_project}, Run={wandb_run_name}, Mode={wandb_mode}")
+        print(f"[W&B] Enabled. Project={wandb_project}, Run={wandb_run_name}, Mode={wandb_mode}")
     else:
         os.environ["WANDB_DISABLED"] = "true"
-        logger.info("[W&B] Disabled (no --wandb_project provided).")
+        print("[W&B] Disabled (no --wandb_project provided).")
 
 
 def parse_args() -> argparse.Namespace:
@@ -216,21 +222,22 @@ def create_trainer(
     return trainer
 
 def train(trainer):
-    logger.info("[TRAIN] Starting training...")
+    print("[TRAIN] Starting training...")
     trainer_stats = trainer.train()
-    logger.info("[TRAIN] Done.")
+    print("[TRAIN] Done.")
 
     metrics = getattr(trainer_stats, "metrics", None) or {}
     if "train_runtime" in metrics:
         minutes = round(metrics["train_runtime"] / 60.0, 2)
-        logger.info(f"[TRAIN] Train runtime: {minutes} minutes")
+        print(f"[TRAIN] Train runtime: {minutes} minutes")
     if "train_loss" in metrics:
-        logger.info(f"[TRAIN] Final train loss: {metrics['train_loss']:.4f}")
+        print(f"[TRAIN] Final train loss: {metrics['train_loss']:.4f}")
 
     return trainer_stats
 
 
 def main():
+    args = parse_args()
 
 
     setup_wandb_env(
@@ -239,20 +246,19 @@ def main():
         wandb_mode=args.wandb_mode
     )
     
-    args = parse_args()
 
-    logger.info(f"Loading dataset from {args.data_dir}...")
+    print(f"Loading dataset from {args.data_dir}...")
     dataset = Dataset.load_from_disk(dataset_path=args.data_dir)
-    logger.info(f"Total samples: {len(dataset)}")
+    print(f"Total samples: {len(dataset)}")
 
     split = dataset.train_test_split(test_size=args.eval_ratio, seed=SEED)
     train_ds = split['train']
     test_ds = split['test']
 
-    logger.info(f"Training samples: {len(train_ds)}")
-    logger.info(f"Test samples: {len(test_ds)}")
+    print(f"Training samples: {len(train_ds)}")
+    print(f"Test samples: {len(test_ds)}")
 
-    logger.info(f"Loading model {args.model_name} via Unsloth...")
+    print(f"Loading model {args.model_name} via Unsloth...")
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name=args.model_name,
         max_seq_length=args.max_seq_length,
@@ -260,7 +266,7 @@ def main():
         load_in_4bit=True # <- qLoRA,Combines LoRA with 4-bit quantization to handle very large models with minimal resources.
     )
 
-    logger.info("Preparing LoRA adapters (qLoRA) ...")
+    print("Preparing LoRA adapters (qLoRA) ...")
     model = FastLanguageModel.get_peft_model(
         model=model,
         r=args.lora_r,
@@ -282,10 +288,11 @@ def main():
 
     # collator
     pad_id = tokenizer.pad_token_id or tokenizer.eos_token_id
-    collator = Collator(pad_token_id=pad_id)
+    print(f'pad_id={pad_id}')   
+    collator = Collator(pad_token_id=pad_id, max_length=args.max_seq_length)
 
     device = get_device()
-    logger.info(f"Using {device}")
+    print(f"Using {device}")
 
     trainer = create_trainer(
         model=model,
@@ -306,10 +313,13 @@ def main():
 
     train(trainer)
 
-    logger.info("Saving LoRA adapters + tokenizer...")
+    print("Saving LoRA adapters + tokenizer...")
     os.makedirs(args.output_dir, exist_ok=True)
     model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
-    logger.info(f"[SAVE] Done. Artifacts in: {args.output_dir}")
+    print(f"[SAVE] Done. Artifacts in: {args.output_dir}")
+
+if __name__ == "__main__":
+    main()
     
 

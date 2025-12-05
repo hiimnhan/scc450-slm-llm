@@ -3,7 +3,7 @@ channels:
   - defaults
   - conda-forge
 dependencies:
-  - python
+  - python=3.12
   - numpy
   - pandas
   - seaborn
@@ -17,14 +17,20 @@ dependencies:
   - nltk
   - beautifulsoup4
   - lxml
+  - loguru
   - pip
 
   - pip:
       - pymupdf
-      - unstructured
-      - unstructured-ingest
-      - unstructured-client
+      - torch
+      - torchvision
+      - tf_keras
+      # - unstructured
+      # - unstructured-ingest
+      # - unstructured-client
+      - xformers
       - gemma
       - unsloth
+
       - transformers
       - datasets

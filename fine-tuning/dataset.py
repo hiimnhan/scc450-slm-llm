@@ -39,13 +39,11 @@ def make_dataset(root, max_seq_len, output, is_gemma=True):
                         yield {
                             "input_ids": ids,
                             "attention_mask": [1] * len(ids),
-                            "labels": ids
                         }
                     else:
                         yield {
                             "input_ids": ids,
-                            "attention_mask": data["attention_mask"],
-                            "labels": ids
+                            "attention_mask": data["attention_mask"][:max_seq_len],
                         }
 
     # Create output directory if it doesn't exist
@@ -56,6 +54,6 @@ def make_dataset(root, max_seq_len, output, is_gemma=True):
     dataset = Dataset.from_generator(gen)
     dataset.save_to_disk(output)
 
-make_dataset(GEMMA_TOKENIZED_ROOT_DIR, 8192, "dataset/gemma-dataset", True)
-make_dataset(PHI_TOKENIZED_ROOT_DIR, 8192, "dataset/phi-dataset", False)
+make_dataset(GEMMA_TOKENIZED_ROOT_DIR, 2048, "dataset/gemma-dataset", True)
+make_dataset(PHI_TOKENIZED_ROOT_DIR, 2048, "dataset/phi-dataset", False)
 
