@@ -1,12 +1,13 @@
 import os
 import argparse
+import dotenv
 from datasets import Dataset
-from loguru import logger
 
 
 import torch
 from unsloth import FastLanguageModel, UnslothTrainer, UnslothTrainingArguments
 from collator import Collator
+from training_callback import TokenSpeedCallback, early_stop
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
@@ -34,6 +35,8 @@ def setup_wandb_env(
         os.environ["WANDB_PROJECT"] = wandb_project
         os.environ.setdefault("WANDB_WATCH", "false")
         os.environ["WANDB_MODE"] = wandb_mode
+        os.environ["WANDB_DISABLE_CODE"] = "true"
+        os.environ["WANDB_LOG_MODEL"] = "checkpoint"
         if wandb_run_name:
             os.environ["WANDB_NAME"] = wandb_run_name
         print(f"[W&B] Enabled. Project={wandb_project}, Run={wandb_run_name}, Mode={wandb_mode}")
@@ -132,7 +135,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--lora_alpha",
         type=int,
-        default=16,
+        default=32,
         help="LoRA alpha.",
     )
     parser.add_argument(
@@ -168,6 +171,7 @@ def parse_args() -> argparse.Namespace:
 def create_trainer(
     model,
     tokenizer,
+    max_seq_length,
     train_dataset,
     eval_dataset,
     data_collator,
@@ -182,14 +186,16 @@ def create_trainer(
     wandb_run_name,
 ):
 
-    # W&B reporting configuration
     if wandb_project:
         report_to = ["wandb"]
     else:
         report_to = ["none"]
 
+    speed_cb = TokenSpeedCallback(seq_len=max_seq_length, batch_size=batch_size, grad_accum=gradient_accumulation_steps)
+
     training_args = UnslothTrainingArguments(
         per_device_train_batch_size=batch_size,
+        per_device_eval_batch_size=batch_size,
         gradient_accumulation_steps=gradient_accumulation_steps,
         num_train_epochs=num_train_epochs,
         learning_rate=learning_rate,
@@ -204,11 +210,18 @@ def create_trainer(
         run_name=wandb_run_name,
 
         save_strategy="steps",
-        save_steps=100,
+        save_steps=500,
         save_total_limit=3,
 
+        eval_strategy="steps",
+        eval_steps=100,
+
         output_dir=output_dir,
-        seed=3407,
+        seed=SEED,
+        lr_scheduler_type='cosine',
+
+        load_best_model_at_end = True,       # MUST USE for early stopping
+        metric_for_best_model = "eval_loss", # metric we want to early stop on
     )
 
     trainer = UnslothTrainer(
@@ -218,6 +231,7 @@ def create_trainer(
         eval_dataset=eval_dataset,
         data_collator=data_collator,
         args=training_args,
+        callbacks=[speed_cb, early_stop]
     )
     return trainer
 
@@ -237,6 +251,7 @@ def train(trainer):
 
 
 def main():
+    dotenv.load_dotenv('.env')
     args = parse_args()
 
 
@@ -251,7 +266,7 @@ def main():
     dataset = Dataset.load_from_disk(dataset_path=args.data_dir)
     print(f"Total samples: {len(dataset)}")
 
-    split = dataset.train_test_split(test_size=args.eval_ratio, seed=SEED)
+    split = dataset.train_test_split(test_size=args.eval_ratio, seed=SEED, shuffle=True)
     train_ds = split['train']
     test_ds = split['test']
 
@@ -263,9 +278,8 @@ def main():
         model_name=args.model_name,
         max_seq_length=args.max_seq_length,
         dtype=None,
-        load_in_4bit=True # <- qLoRA,Combines LoRA with 4-bit quantization to handle very large models with minimal resources.
+        load_in_4bit=True # <- qLoRA 4-bit quantization
     )
-
     print("Preparing LoRA adapters (qLoRA) ...")
     model = FastLanguageModel.get_peft_model(
         model=model,
@@ -280,6 +294,8 @@ def main():
             "gate_proj",
             "up_proj",
             "down_proj",
+            "lm_head",
+            "embed_tokens"
         ],
         use_gradient_checkpointing="unsloth",
         random_state=SEED,
@@ -297,12 +313,13 @@ def main():
     trainer = create_trainer(
         model=model,
         tokenizer=tokenizer,
+        max_seq_length=args.max_seq_length,
         train_dataset=train_ds,
         eval_dataset=test_ds,
         data_collator=collator,
         output_dir=args.output_dir,
         learning_rate=args.learning_rate,
-        embedding_learning_rate=args.embedding_learning_rate,
+        embedding_learning_rate=args.embedding_learning_rate * 1e-1,
         batch_size=args.batch_size,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         num_train_epochs=args.num_train_epochs,
@@ -315,9 +332,11 @@ def main():
 
     print("Saving LoRA adapters + tokenizer...")
     os.makedirs(args.output_dir, exist_ok=True)
-    model.save_pretrained(args.output_dir)
-    tokenizer.save_pretrained(args.output_dir)
+    model.save_pretrained_gguf(args.output_dir, tokenizer, quantization_method = "q4_k_m")
     print(f"[SAVE] Done. Artifacts in: {args.output_dir}")
+    print('[UPLOAD] Uploading to hub...')
+    model.push_to_hub_gguf("nhannguyen2730/unsloth-gemma3-qlora", tokenizer, quantization_method = "q4_k_m", token = os.getenv('HF_TOKEN'))
+    print('[UPLOAD] Done')
 
 if __name__ == "__main__":
     main()
