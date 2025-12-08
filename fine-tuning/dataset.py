@@ -22,7 +22,7 @@ def walk_files(root):
                 if f.endswith('.json'):
                     yield os.path.join(dirpath, f)
 
-def make_dataset(root, max_seq_len, output, is_gemma=True):
+def make_dataset(root, max_seq_len, output):
     def gen():
         for path in walk_files(root):
             with open(path, 'r', encoding='utf-8') as f:
@@ -35,16 +35,10 @@ def make_dataset(root, max_seq_len, output, is_gemma=True):
 
                     ids = ids[:max_seq_len]
 
-                    if is_gemma:
-                        yield {
-                            "input_ids": ids,
-                            "attention_mask": [1] * len(ids),
-                        }
-                    else:
-                        yield {
-                            "input_ids": ids,
-                            "attention_mask": data["attention_mask"][:max_seq_len],
-                        }
+                    yield {
+                        "input_ids": ids,
+                        "attention_mask": [1] * len(ids),
+                    }
 
     # Create output directory if it doesn't exist
     output_dir = os.path.dirname(output)
@@ -54,6 +48,6 @@ def make_dataset(root, max_seq_len, output, is_gemma=True):
     dataset = Dataset.from_generator(gen)
     dataset.save_to_disk(output)
 
-make_dataset(GEMMA_TOKENIZED_ROOT_DIR, 2048, "dataset/gemma-dataset", True)
-make_dataset(PHI_TOKENIZED_ROOT_DIR, 2048, "dataset/phi-dataset", False)
+make_dataset(GEMMA_TOKENIZED_ROOT_DIR, 2048, "dataset/gemma-dataset")
+make_dataset(PHI_TOKENIZED_ROOT_DIR, 2048, "dataset/phi-dataset")
 
