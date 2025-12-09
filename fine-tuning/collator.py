@@ -16,9 +16,6 @@ class Collator:
         labels = []
 
         for item in batch:
-            print('='* 30)
-            print(item)
-            print('='* 30)
 
             ids = item['input_ids'][:max_len]
             attn = item['attention_mask'][:max_len]
@@ -32,7 +29,7 @@ class Collator:
             labels.append(label + [-100] * pad_len)
 
         return {
-            "input_ids": torch.tensor(input_ids, torch.long),
-            "attention_mask": torch.tensor(attn_masks, torch.long),
-            "labels": torch.tensor(labels, torch.long)
+            "input_ids": torch.tensor(input_ids, dtype=torch.long),
+            "attention_mask": torch.tensor(attn_masks, dtype=torch.long),
+            "labels": torch.tensor(labels, dtype=torch.long)
         }

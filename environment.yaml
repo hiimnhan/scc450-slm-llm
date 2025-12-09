@@ -31,6 +31,6 @@ dependencies:
       - xformers
       - gemma
       - unsloth
-
+      - wandb
       - transformers
       - datasets

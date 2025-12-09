@@ -60,7 +60,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--max_seq_length",
         type=int,
-        default=2048,
+        default=1024,
         help="Maximum sequence length to keep from pre-tokenized sequences.",
     )
     parser.add_argument(
@@ -103,13 +103,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--batch_size",
         type=int,
-        default=2,
+        default=1,
         help="Per-device batch size.",
     )
     parser.add_argument(
         "--gradient_accumulation_steps",
         type=int,
-        default=8,
+        default=16,
         help="Gradient accumulation steps.",
     )
     parser.add_argument(
@@ -165,6 +165,19 @@ def parse_args() -> argparse.Namespace:
         choices=["online", "offline"],
         help="W&B mode: 'online' or 'offline'.",
     )
+    parser.add_argument(
+        "--hf_path",
+        type=str,
+        default=None,
+        help="W&B mode: 'online' or 'offline'.",
+    )
+
+    parser.add_argument(
+        "--resume_from_checkpoint",
+        type=str,
+        default=None,
+        help="Path to a checkpoint folder (e.g. models/checkpoint-1500) to resume training from.",
+    )
 
     return parser.parse_args()
 
@@ -211,7 +224,7 @@ def create_trainer(
 
         save_strategy="steps",
         save_steps=500,
-        save_total_limit=3,
+        save_total_limit=1,
 
         eval_strategy="steps",
         eval_steps=100,
@@ -222,6 +235,8 @@ def create_trainer(
 
         load_best_model_at_end = True,       # MUST USE for early stopping
         metric_for_best_model = "eval_loss", # metric we want to early stop on
+
+        remove_unused_columns = False
     )
 
     trainer = UnslothTrainer(
@@ -235,9 +250,9 @@ def create_trainer(
     )
     return trainer
 
-def train(trainer):
+def train(trainer, resume_from_checkpoint):
     print("[TRAIN] Starting training...")
-    trainer_stats = trainer.train()
+    trainer_stats = trainer.train(resume_from_checkpoint=resume_from_checkpoint)
     print("[TRAIN] Done.")
 
     metrics = getattr(trainer_stats, "metrics", None) or {}
@@ -294,8 +309,6 @@ def main():
             "gate_proj",
             "up_proj",
             "down_proj",
-            "lm_head",
-            "embed_tokens"
         ],
         use_gradient_checkpointing="unsloth",
         random_state=SEED,
@@ -328,14 +341,24 @@ def main():
         wandb_run_name=args.wandb_run_name,
     )
 
-    train(trainer)
+    train(trainer, resume_from_checkpoint=args.resume_from_checkpoint)
 
     print("Saving LoRA adapters + tokenizer...")
     os.makedirs(args.output_dir, exist_ok=True)
-    model.save_pretrained_gguf(args.output_dir, tokenizer, quantization_method = "q4_k_m")
-    print(f"[SAVE] Done. Artifacts in: {args.output_dir}")
+    model.save_pretrained(args.output_dir + '/model')
+    tokenizer.save_pretrained(args.output_dir + '/model')
+    
+    # tokenizer.save_pretrained(args.output_dir)
+    # print(f"[SAVE] Done. Artifacts in: {args.output_dir / 'model'}")
     print('[UPLOAD] Uploading to hub...')
-    model.push_to_hub_gguf("nhannguyen2730/unsloth-gemma3-qlora", tokenizer, quantization_method = "q4_k_m", token = os.getenv('HF_TOKEN'))
+    model.push_to_hub(
+        args.hf_path,
+        token=os.getenv("HF_TOKEN"),
+    )
+    tokenizer.push_to_hub(
+        args.hf_path,
+        token=os.getenv("HF_TOKEN"),
+    )
     print('[UPLOAD] Done')
 
 if __name__ == "__main__":
