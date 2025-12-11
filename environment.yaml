@@ -34,3 +34,7 @@ dependencies:
       - wandb
       - transformers
       - datasets
+      - textstat
+      - sentence_transformers
+      - chromadb
+      - langchain_text_splitters

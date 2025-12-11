@@ -38,7 +38,7 @@ class Section:
     subsections: List['Section'] = field(default_factory=list)
 
 
-def detect_checkbox_state(element: Dict[str, Any], prev_element: Optional[Dict[str, Any]] = None, next_element: Optional[Dict[str, Any]] = None) -> Optional[str]:
+def detect_checkbox_state(element, prev_element = None, next_element = None):
     html = element.get('metadata', {}).get('text_as_html', '')
 
     if '<input class="Checkbox"' in html:
@@ -67,7 +67,7 @@ def detect_checkbox_state(element: Dict[str, Any], prev_element: Optional[Dict[s
     return None
 
 
-def extract_structured_data(json_path: str) -> List[Section]:
+def extract_structured_data(json_path):
     with open(json_path, 'r') as f:
         data = json.load(f)
 
@@ -187,11 +187,11 @@ def extract_structured_data(json_path: str) -> List[Section]:
     return sections
 
 
-def export_to_flat_list(sections: List[Section]) -> List[Dict[str, Any]]:
+def export_to_flat_list(sections):
     
     flat_list = []
 
-    def process_sections(sections: List[Section]):
+    def process_sections(sections):
         for section in sections:
             section_title = section.title
 
@@ -237,7 +237,7 @@ def export_to_flat_list(sections: List[Section]) -> List[Dict[str, Any]]:
     return flat_list
 
 
-def process_directory(input_dir: str = "converted", output_dir: str = "extracted"):
+def process_directory(input_dir = "converted", output_dir = "extracted"):
     input_path = Path(input_dir)
     output_path = Path(output_dir)
 

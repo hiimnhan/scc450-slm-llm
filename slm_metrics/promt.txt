@@ -1,0 +1,5 @@
+Answer the following question about the text. Answer in a few words, not in sentence. Text: <CONTEXT> Question: <QUERY>
+Answer the following question about the text. Answer YES or NO only. Do not add any other comment. Text: <CONTEXT> Question: <QUERY>
+Answer the following question about the text. Answer YES or NO only. Do not add any other comment. Text: <CONTEXT> Question: <QUERY>
+Answer the following question about the text. Answer YES or NO only. Do not add any other comment. Text: <CONTEXT> Question: <QUERY>
+Answer the following question about the text. Answer YES or NO only. Do not add any other comment. Text: <CONTEXT> Question: <QUERY>
